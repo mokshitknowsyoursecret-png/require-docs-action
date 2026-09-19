@@ -1,0 +1,22 @@
+name: 'Require Docs Update'
+description: 'Warns contributors if they change code without updating documentation.'
+inputs:
+  github-token:
+    description: 'GitHub token for commenting'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Check for Doc Changes
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+      run: |
+        FILES=$(gh pr view$PR_URL --json files --jq '.files.[].path')
+        if echo "$FILES" \vert{} grep -q "\.js$"; then
+          if ! echo "$FILES" \vert{} grep -q "\.md$"; then
+            gh pr comment $PR_URL --body "⚠️ **Friendly Reminder:** You modified code files without updating any \`.md\` documentation. Please ensure the docs stay updated!"
+          fi
+        fi
+        
